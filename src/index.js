@@ -39,7 +39,6 @@ class Tile extends React.PureComponent {
 class Board extends React.Component {
   constructor(props) {
     super(props)
-    console.log(newBoard[0][3]);
     this.state = {
       history: [newBoard,],
       pieceSelected: { x: null, y: null, },
@@ -51,9 +50,8 @@ class Board extends React.Component {
 
   handleBoackClick(x, y) {
     //get current board
-    let history = this.state.history;
-    let current = history[history.length - 1];
-
+    let history = this.state.history.slice();
+    let current = history[history.length - 1].slice();
 
     //check if piece selected
     if (this.checkIfPieceSelected()) {
@@ -70,27 +68,48 @@ class Board extends React.Component {
       let endPos = { x: x, y: y }
       let isLegalMove = current[startPos.y][startPos.x].isLegalMove(current, startPos, endPos)
       if (isLegalMove && (!isKingChecked || isKingChecked === isKingSelected)) {
+        //coppy array
+        let next = [];
+        for (let i = 0; i < 8; i++) {
+          next.push(current[i].slice())
+        }
         //move piece and save
-        let next = current.slice();
         next[endPos.y][endPos.x] = next[startPos.y][startPos.x];
         next[startPos.y][startPos.x] = null;
 
-        //reset selected state and append new state and chenge turn
-        this.setState({
-          history: this.state.history.concat([next]),
-          pieceSelected: { x: null, y: null, },
-          isWhiteTurn: !this.state.isWhiteTurn,
-        }, () => {
-          //check if king is under attack
-          for (let y = 0; y < 8;y++) {
-            for (let x = 0; x < 8;x++) {
-              if (next[y][x] instanceof King) {
-                next[y][x].isUnderAttack(next, { x: x, y: y })
-              }
+        //check if own king will be under attack
+        let isKindUnderAttack;
+        for (let y = 0; y < 8; y++) {
+          for (let x = 0; x < 8; x++) {
+            if (next[y][x] instanceof King && this.state.isWhiteTurn === next[y][x].isWhite) {
+              isKindUnderAttack = next[y][x].isUnderAttack(next, { x: x, y: y })
             }
           }
-          console.log(this.state.kingWhite.isChecked);
-        })
+        }
+
+        //dont commit change is own king will be checked
+        if (!isKindUnderAttack) {
+          //reset selected state and append new state and chenge turn
+          this.setState({
+            history: this.state.history.concat([next]),
+            pieceSelected: { x: null, y: null, },
+            isWhiteTurn: !this.state.isWhiteTurn,
+          }, () => {
+            //check if king is under attack
+            for (let y = 0; y < 8; y++) {
+              for (let x = 0; x < 8; x++) {
+                if (next[y][x] instanceof King) {
+                  next[y][x].isUnderAttack(next, { x: x, y: y })
+                }
+              }
+            }
+          })
+        }
+        else {
+          this.setState({
+            pieceSelected: { x: null, y: null, },
+          })
+        }
       }
       else {
         //remove selected piece

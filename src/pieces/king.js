@@ -14,7 +14,6 @@ export default class King extends Piece{
     };
 }
 
-//TODO: check for mate legalness
 //TODO: addCastle
 King.prototype.isLegalMove = function isLegalMove(currentBoard,posStart,posEnd) {
     //get diffrence in tiles
